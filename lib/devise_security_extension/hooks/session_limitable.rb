@@ -19,9 +19,9 @@ Warden::Manager.after_set_user :only => :fetch do |record, warden, options|
 
   if record.respond_to?(:unique_session_id) && warden.authenticated?(scope) && options[:store] != false
     if record.unique_session_id != warden.session(scope)['unique_session_id'] && !env['devise.skip_session_limitable']
-      record.non_unique_session!
       warden.raw_session.clear
       warden.logout(scope)
+      record.non_unique_session!(ip: env['HTTP_X_FORWARDED_FOR'], agent: env['HTTP_USER_AGENT'])
       throw :warden, :scope => scope, :message => :session_limited
     end
   end
