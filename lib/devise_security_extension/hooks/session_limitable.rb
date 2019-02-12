@@ -7,6 +7,9 @@ Warden::Manager.after_set_user :except => :fetch do |record, warden, options|
     unique_session_id = Devise.friendly_token
     warden.session(options[:scope])['unique_session_id'] = unique_session_id
     record.update_unique_session_id!(unique_session_id)
+
+    # Unrelated to SessionLimitable
+    record.update_columns(last_user_agent: warden.request.env['HTTP_USER_AGENT'])
   end
 end
 
