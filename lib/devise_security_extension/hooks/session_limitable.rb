@@ -28,4 +28,11 @@ Warden::Manager.after_set_user :only => :fetch do |record, warden, options|
       throw :warden, :scope => scope, :message => :session_limited
     end
   end
+
+  # Unrelated to SessionLimitable
+  if record.respond_to?(:active?) && !record.active?
+    warden.raw_session.clear
+    warden.logout(scope)
+    throw :warden, :scope => scope, :message => I18n.t('devise.failure.user.deactivated')
+  end
 end
