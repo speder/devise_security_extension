@@ -32,9 +32,10 @@ module Devise
 
         # if it is not set, check the last activity against configured expire_after time range
         # return self.last_activity_at < self.class.expire_after.ago unless self.last_activity_at.nil?
-        #
-        # Replace one-size-fits-all expiry with one that is customizable per account.
-        #
+        #-----------------------------------------------------------------------
+        # Replace one-size-fits-all expiry with one that is customizable per
+        # Customer account.
+        #-----------------------------------------------------------------------
         return self.last_activity_at < self.expire_after.ago unless self.last_activity_at.nil?
 
         # if last_activity_at is nil as well, the user has to be 'fresh' and is therefore not expired

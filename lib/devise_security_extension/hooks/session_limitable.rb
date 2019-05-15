@@ -7,10 +7,9 @@ Warden::Manager.after_set_user :except => :fetch do |record, warden, options|
     unique_session_id = Devise.friendly_token
     warden.session(options[:scope])['unique_session_id'] = unique_session_id
     record.update_unique_session_id!(unique_session_id)
-
-    #
-    # Unrelated to SessionLimitable: update user agent info.
-    #
+    #---------------------------------------------------------------------------
+    # Unrelated to SessionLimitable: update User device info.
+    #---------------------------------------------------------------------------
     record.update_columns(last_user_agent: warden.request.env['HTTP_USER_AGENT'])
   end
 end
@@ -26,13 +25,17 @@ Warden::Manager.after_set_user :only => :fetch do |record, warden, options|
     if record.unique_session_id != warden.session(scope)['unique_session_id'] && !env['devise.skip_session_limitable']
       warden.raw_session.clear
       warden.logout(scope)
+      #-------------------------------------------------------------------------
+      # Log User IP address and device info.
+      #-------------------------------------------------------------------------
       record.non_unique_session!(ip_address: env['HTTP_X_FORWARDED_FOR'], user_agent: env['HTTP_USER_AGENT'])
       throw :warden, :scope => scope, :message => :session_limited
     end
   end
 
-  # Unrelated to SessionLimitable: logout if account has been deactivated.
-  #
+  #-----------------------------------------------------------------------------
+  # Unrelated to SessionLimitable: logout if User account has been deactivated.
+  #-----------------------------------------------------------------------------
   if record.respond_to?(:active?) && !record.active?
     warden.raw_session.clear
     warden.logout(scope)
