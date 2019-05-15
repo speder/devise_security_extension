@@ -8,7 +8,9 @@ Warden::Manager.after_set_user :except => :fetch do |record, warden, options|
     warden.session(options[:scope])['unique_session_id'] = unique_session_id
     record.update_unique_session_id!(unique_session_id)
 
-    # Unrelated to SessionLimitable
+    #
+    # Unrelated to SessionLimitable: update user agent info.
+    #
     record.update_columns(last_user_agent: warden.request.env['HTTP_USER_AGENT'])
   end
 end
@@ -29,7 +31,8 @@ Warden::Manager.after_set_user :only => :fetch do |record, warden, options|
     end
   end
 
-  # Unrelated to SessionLimitable
+  # Unrelated to SessionLimitable: logout if account has been deactivated.
+  #
   if record.respond_to?(:active?) && !record.active?
     warden.raw_session.clear
     warden.logout(scope)
