@@ -26,19 +26,43 @@ module Devise
       # Tells if the account has expired
       #
       # @return [bool]
+      #
+      #-------------------------------------------------------------------------
+      # Some major modifications here:
+      #
+      # 1. Replace the constant "expire_after" with a customizable value
+      #    persisted in the User's associated Customer record.
+      #
+      # 2. If the User's "last_activity_at" column is blank (becuase the User
+      #    has never confirmed their email address and actually logged in) then
+      #    use the "confirmation_sent_at" column.
+      #
+      # 3. In either case, if the User has expired then effect a corresponding
+      #    state change.
+      #-------------------------------------------------------------------------
+      #
       def expired?
-        # expired_at set (manually, via cron, etc.)
-        return self.expired_at < Time.now.utc unless self.expired_at.nil?
+        if self.expired_at.present?
+          return self.expired_at < Time.now.utc
+        end
 
-        # if it is not set, check the last activity against configured expire_after time range
-        # return self.last_activity_at < self.class.expire_after.ago unless self.last_activity_at.nil?
-        #-----------------------------------------------------------------------
-        # Replace one-size-fits-all expiry with one that is customizable per
-        # Customer account.
-        #-----------------------------------------------------------------------
-        return self.last_activity_at < self.expire_after.ago unless self.last_activity_at.nil?
+        if self.last_activity_at.present?
+          if self.last_activity_at < self.expire_after.ago
 
-        # if last_activity_at is nil as well, the user has to be 'fresh' and is therefore not expired
+            self.lock_for_inactivity! if self.try(:can_lock_for_inactivity?)
+
+            return true
+          end
+
+        elsif self.confirmation_sent_at.present?
+          if self.confirmation_sent_at < self.expire_after.ago
+
+            self.deactivate! if self.try(:can_deactivate?)
+
+            return true
+          end
+        end
+
         false
       end
 
